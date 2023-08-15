@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y git dos2unix
 
 WORKDIR /src
 
-COPY . /src
+COPY ./code /src
+COPY ./.git /src
 RUN dos2unix /src/scripts/docker-link-repos.sh && bash /src/scripts/docker-link-repos.sh
 RUN yarn --network-timeout=200000 install
 
@@ -23,12 +24,14 @@ RUN dos2unix /src/scripts/docker-package.sh && bash /src/scripts/docker-package.
 RUN cp /src/config.sample.json /src/webapp/config.json
 
 # App
-FROM nginx:alpine-slim
+FROM nginxinc/nginx-unprivileged
 
 COPY --from=builder /src/webapp /app
 
 # Override default nginx config
 COPY /nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
+USER root
 RUN rm -rf /usr/share/nginx/html \
   && ln -s /app /usr/share/nginx/html
+USER 1001
